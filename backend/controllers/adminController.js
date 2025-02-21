@@ -43,7 +43,10 @@ exports.createCenter = async (req, res) => {
 exports.getAllCenters = async (req, res) => {
     try {
         const centers = await Center.find().populate('doctors', 'name phoneNumber');
-        res.status(200).json({ centers })
+        if(!centers) {
+            return res.status(404).json({message: 'No center found!'})
+        }
+        res.status(200).json(centers);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -52,11 +55,11 @@ exports.getAllCenters = async (req, res) => {
 //get center with id
 exports.getCenterById = async (req, res) => {
     try {
-        const center = await Center.findById(req.params.id);
+        const center = await Center.findById(req.params.id).populate('doctors', '_id name phoneNumber');
         if (!center) {
             return res.status(404).json({ message: 'Center not found!' });
         }
-        res.status(200).json({ center });
+        res.status(200).json(center);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -136,10 +139,21 @@ exports.createAccount = async (req, res) => {
 //get accounts
 exports.getAllAccounts = async (req, res) => {
     try {
-        const accounts = await User.find().select('-password');
+        const accounts = await User.find()
+        .populate('role', 'nameRole')
+        .populate({
+            path: 'order',
+            select: 'doctorId bookTime fees status paymentMethod',
+            populate: {
+                path: 'doctorId',
+                select: 'name'
+            }
+        })
+        .select('-password');
         if (!accounts) {
             return res.status(404).json({ message: 'User not found!' })
         }
+
         res.status(200).json(accounts)
     } catch (error) {
         res.status(500).json({ message: error.message })
@@ -149,7 +163,17 @@ exports.getAllAccounts = async (req, res) => {
 //get account by id
 exports.getAccountById = async (req, res) => {
     try {
-        const account = await User.findById(req.params.id).select('-password');
+        const account = await User.findById(req.params.id)
+        .populate('role', 'nameRole')
+        .populate({
+            path: 'order',
+            select: 'doctorId bookTime fees status paymentMethod',
+            populate: {
+                path: 'doctorId',
+                select: 'name'
+            }
+        })
+        .select('-password');
         if (!account) {
             return res.status(404).json({ message: 'User not found!' })
         }

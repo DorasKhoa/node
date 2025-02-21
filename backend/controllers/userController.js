@@ -3,8 +3,7 @@ const Role = require('../models/role.js');
 const Order = require('../models/order.js');
 const bcrypt = require('bcrypt');
 const { validationResult } = require('express-validator');
-const {generateAccessToken, generateRefreshToken} = require('../utils/jwtHelper.js');
-const order = require('../models/order.js');
+const { generateAccessToken, generateRefreshToken } = require('../utils/jwtHelper.js');
 
 //user register
 exports.register = async (req, res) => {
@@ -81,33 +80,42 @@ exports.login = async (req, res) => {
 exports.getAppointment = async (req, res) => {
     try {
         const userId = req.user.id
-        const order = await Order.find({userId})
-        .populate('doctorId', 'name -_id')
-        .populate('userId', 'name -_id');
-        if(!order) {
-            return res.status(404).json({message: 'No appointments found!'})
+        const orders = await Order.find({ userId })
+            .populate('doctorId', 'name')
+            .populate('userId', 'name');
+        if (!orders) {
+            return res.status(404).json({ message: 'No appointments found!' })
         }
-        res.status(200).json(orderResponse);
+        const responses = orders.map(order => ({
+            _id: order._id,
+            userName: order.userId.name,
+            doctorName: order.doctorId.name,
+            bookTime: order.bookTime,
+            fees: order.fees,
+            status: order.status,
+            paymentMethod: order.paymentMethod
+        }))
+        res.status(200).json(responses);
     } catch (error) {
-        res.status(500).json({message: error.message});
+        res.status(500).json({ message: error.message });
     }
 }
 
 //booking appointment
 exports.bookingAppointment = async (req, res) => {
-    const {doctorId, bookTime} = req.body;
+    const { doctorId, bookTime } = req.body;
     try {
         const doctor = await User.findById(doctorId).populate('role');
-        if(!doctor || doctor.role.nameRole !== 'doctor') {
-            return res.status(404).json({message: 'Doctor not found!'});
+        if (!doctor || doctor.role.nameRole !== 'doctor') {
+            return res.status(404).json({ message: 'Doctor not found!' });
         }
 
         const existingOrder = await Order.findOne({
             doctorId: doctorId,
             bookTime: bookTime
         })
-        if(existingOrder) {
-            return res.status(409).json({message: 'The doctor is already booked at this time. Please choose another time.'})
+        if (existingOrder) {
+            return res.status(409).json({ message: 'The doctor is already booked at this time. Please choose another time.' })
         }
 
         const newOrder = await Order.create({
@@ -117,11 +125,11 @@ exports.bookingAppointment = async (req, res) => {
             fees: doctor.fees,
         })
 
-        await User.findByIdAndUpdate(req.user.id, {$push: {order: newOrder._id}});
-        await User.findByIdAndUpdate(doctorId, {$push: {order: newOrder._id}});
+        await User.findByIdAndUpdate(req.user.id, { $push: { order: newOrder._id } });
+        await User.findByIdAndUpdate(doctorId, { $push: { order: newOrder._id } });
 
-        res.status(200).json({message: 'Appointment book successfully!', newOrder});
-    } catch(error) {
-        res.status(500).json({message: error.message});
+        res.status(200).json({ message: 'Appointment book successfully!', newOrder });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
 }
