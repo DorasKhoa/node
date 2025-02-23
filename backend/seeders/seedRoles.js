@@ -11,14 +11,14 @@ const seedRoles = async () => {
 
         const roles = ['admin', 'doctor', 'user'];
 
-        for (let roleName of roles) {
-            const existingRole = await Role.findOne({ nameRole: roleName });
+        for (let nameRole of roles) {
+            const existingRole = await Role.findOne({ nameRole });
 
             if (!existingRole) {
-                await Role.create({ nameRole: roleName });
-                console.log(`Role '${roleName}' created`);
+                await Role.create({ nameRole });
+                console.log(`Role '${nameRole}' created`);
             } else {
-                console.log(`Role ${roleName} is existing`)
+                console.log(`Role ${nameRole} is existing`)
             }
         }
 

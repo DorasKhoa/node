@@ -5,7 +5,7 @@ const orderSchema = new mongoose.Schema({
     doctorId: {type: mongoose.Schema.Types.ObjectId, ref: 'User'},
     bookTime: {type: String, required: true},
     fees: {type: Number, required: true},
-    status: {type: String, enum:['pending', 'approved', 'rejected', 'paid'], default: 'pending'},
+    status: {type: String, enum:['pending', 'approved', 'rejected', 'paid', 'canceled'], default: 'pending'},
     paymentMethod: {type:String, enum:['cash', 'card'], default: 'cash'}
 },{timestamps: true});
 

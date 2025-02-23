@@ -2,6 +2,7 @@ const { validationResult } = require('express-validator');
 const Center = require('../models/center.js');
 const User = require('../models/user.js');
 const Role = require('../models/role.js')
+const Order = require('../models/order.js');
 const bcrypt = require('bcrypt');
 
 //add center
@@ -43,8 +44,8 @@ exports.createCenter = async (req, res) => {
 exports.getAllCenters = async (req, res) => {
     try {
         const centers = await Center.find().populate('doctors', 'name phoneNumber');
-        if(!centers) {
-            return res.status(404).json({message: 'No center found!'})
+        if (!centers) {
+            return res.status(404).json({ message: 'No center found!' })
         }
         res.status(200).json(centers);
     } catch (error) {
@@ -140,16 +141,16 @@ exports.createAccount = async (req, res) => {
 exports.getAllAccounts = async (req, res) => {
     try {
         const accounts = await User.find()
-        .populate('role', 'nameRole')
-        .populate({
-            path: 'order',
-            select: 'doctorId bookTime fees status paymentMethod',
-            populate: {
-                path: 'doctorId',
-                select: 'name'
-            }
-        })
-        .select('-password');
+            .populate('role', 'nameRole')
+            .populate({
+                path: 'order',
+                select: 'doctorId bookTime fees status paymentMethod',
+                populate: {
+                    path: 'doctorId',
+                    select: 'name'
+                }
+            })
+            .select('-password');
         if (!accounts) {
             return res.status(404).json({ message: 'User not found!' })
         }
@@ -164,16 +165,16 @@ exports.getAllAccounts = async (req, res) => {
 exports.getAccountById = async (req, res) => {
     try {
         const account = await User.findById(req.params.id)
-        .populate('role', 'nameRole')
-        .populate({
-            path: 'order',
-            select: 'doctorId bookTime fees status paymentMethod',
-            populate: {
-                path: 'doctorId',
-                select: 'name'
-            }
-        })
-        .select('-password');
+            .populate('role', 'nameRole')
+            .populate({
+                path: 'order',
+                select: 'doctorId bookTime fees status paymentMethod',
+                populate: {
+                    path: 'doctorId',
+                    select: 'name'
+                }
+            })
+            .select('-password');
         if (!account) {
             return res.status(404).json({ message: 'User not found!' })
         }
@@ -235,9 +236,9 @@ exports.assignDoctorToCenter = async (req, res) => {
             return res.status(404).json({ message: 'Doctor not found!' });
         }
 
-        const oldCenter = await Center.findOne({doctors: doctorId})
-        if(oldCenter) {
-            await Center.findByIdAndUpdate(oldCenter._id, {$pull: {doctors: doctorId}});
+        const oldCenter = await Center.findOne({ doctors: doctorId })
+        if (oldCenter) {
+            await Center.findByIdAndUpdate(oldCenter._id, { $pull: { doctors: doctorId } });
         }
 
         if (center.doctors.includes(doctorId)) {
@@ -255,16 +256,58 @@ exports.assignDoctorToCenter = async (req, res) => {
     }
 }
 
+
+//remove doctor from vennter
 exports.removeDoctorFromCenter = async (req, res) => {
-    const {doctorId} = req.body;
+    const { doctorId } = req.body;
     try {
-        const center = await Center.findOne({doctors: doctorId});
-        if(!center) {
-            return res.status(404).json({message: 'Doctor is not assigned to any center!'});
+        const center = await Center.findOne({ doctors: doctorId });
+        if (!center) {
+            return res.status(404).json({ message: 'Doctor is not assigned to any center!' });
         }
-        await Center.findByIdAndUpdate(center.id, {$pull: {doctors: doctorId}})
-        res.status(200).json({message: 'Doctor removed successfully'});
-    } catch(error) {
-        res.status(500).json({message: error.message});
+        await Center.findByIdAndUpdate(center.id, { $pull: { doctors: doctorId } })
+        res.status(200).json({ message: 'Doctor removed successfully' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+}
+
+//approve appointment
+exports.approveAppointment = async (req, res) => {
+    const orderId = req.params.id;
+    try {
+        const order = await Order.findById(orderId)
+        if(!order) {
+            return res.status(404).json({message: 'Order not found!'})
+        }
+        
+        if(order.status !== 'pending') {
+            return res.status(400).json({message: 'You can only approve pending appointment'})
+        }
+
+        await Order.findByIdAndUpdate(orderId, {status: 'approved'});
+        res.status(200).json({message: 'Appointment aprroved successfully!'})
+    } catch (error) {
+        res.status(500).json({ message: error.message })
+    }
+}
+
+//reject appointment
+exports.rejectAppointment = async (req, res) => {
+    const orderId = req.params.id;
+    try {
+        const order = await Order.findById(orderId)
+        if(!order) {
+            return res.status(404).json({message: 'Order not found!'})
+        }
+        
+        if(order.status !== 'pending') {
+            return res.status(400).json({message: 'You can only reject pending appointment'})
+        }
+
+        await Order.findByIdAndUpdate(orderId, {status: 'rejected'});
+        res.status(200).json({message: 'Appointment rejected successfully!'})
+    } catch (error) {
+        res.status(500).json({ message: error.message })
     }
 }

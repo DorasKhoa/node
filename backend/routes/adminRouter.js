@@ -22,4 +22,8 @@ router.get('/accounts/:id', verifyToken, isAdmin, adminController.getAccountById
 router.put('/accounts/:id', verifyToken, isAdmin, adminController.updateAccount);
 router.delete('/accounts/:id', verifyToken, isAdmin, adminController.deleteAccount);
 
+//appointment
+router.put('/appointments/:id/approve', verifyToken, isAdmin, adminController.approveAppointment);
+router.put('/appointments/:id/cancel', verifyToken, isAdmin, adminController.rejectAppointment);
+
 module.exports = router;

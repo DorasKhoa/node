@@ -11,5 +11,6 @@ router.post('/login', userValidator.loginValidator ,userController.login);
 //appointment
 router.post('/appointments', verifyToken, isUser, userController.bookingAppointment);
 router.get('/appointments', verifyToken, isUser, userController.getAppointment);
+router.put('/appointments/:id', verifyToken, isUser, userController.cancelAppointment);
 
 module.exports = router;
