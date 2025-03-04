@@ -76,85 +76,62 @@ exports.login = async (req, res) => {
     }
 }
 
-//get appointment
-exports.getAppointment = async (req, res) => {
-    try {
-        const userId = req.user.id
-        const orders = await Order.find({ userId })
-            .populate('doctorId', 'name')
-            .populate('userId', 'name');
-        if (!orders) {
-            return res.status(404).json({ message: 'No appointments found!' })
-        }
-        const responses = orders.map(order => ({
-            _id: order._id,
-            userName: order.userId.name,
-            doctorName: order.doctorId.name,
-            bookTime: order.bookTime,
-            fees: order.fees,
-            status: order.status,
-            paymentMethod: order.paymentMethod
-        }))
-        res.status(200).json(responses);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-}
+// //get appointment
+// exports.getAppointment = async (req, res) => {
+//     try {
+//         const userId = req.user.id
+//         const orders = await Order.find({ userId })
+//             .populate('doctorId', 'name')
+//             .populate('userId', 'name');
+//         if (!orders) {
+//             return res.status(404).json({ message: 'No appointments found!' })
+//         }
+//         const responses = orders.map(order => ({
+//             _id: order._id,
+//             userName: order.userId.name,
+//             doctorName: order.doctorId.name,
+//             bookTime: order.bookTime,
+//             fees: order.fees,
+//             status: order.status,
+//             paymentMethod: order.paymentMethod
+//         }))
+//         res.status(200).json(responses);
+//     } catch (error) {
+//         res.status(500).json({ message: error.message });
+//     }
+// }
 
 //booking appointment
 exports.bookingAppointment = async (req, res) => {
-    const { doctorId, bookTime } = req.body;
+    const {doctorId} = req.body;
     try {
-        const doctor = await User.findById(doctorId).populate('role');
-        if (!doctor || doctor.role.nameRole !== 'doctor') {
-            return res.status(404).json({ message: 'Doctor not found!' });
-        }
-
-        const existingOrder = await Order.findOne({
-            doctorId: doctorId,
-            bookTime: bookTime
-        })
-        if (existingOrder) {
-            return res.status(409).json({ message: 'The doctor is already booked at this time. Please choose another time.' })
-        }
-
-        const newOrder = await Order.create({
-            userId: req.user.id,
-            doctorId: doctorId,
-            bookTime: bookTime,
-            fees: doctor.fees,
-        })
-
-        await User.findByIdAndUpdate(req.user.id, { $push: { order: newOrder._id } });
-        await User.findByIdAndUpdate(doctorId, { $push: { order: newOrder._id } });
-
-        res.status(200).json({ message: 'Appointment book successfully!', newOrder });
+        
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({message: error.message})
     }
 }
 
-//cancel appointment
-exports.cancelAppointment = async (req, res) => {
-    const orderId = req.params.id;
-    const user = req.user.id;
-    try {
-        const order = await Order.findById(orderId).populate('userId');
-        if (!order) {
-            return res.status(404).json({ message: 'Appoitment not found!' })
-        }
+// //cancel appointment
+// exports.cancelAppointment = async (req, res) => {
+//     const orderId = req.params.id;
+//     const user = req.user.id;
+//     try {
+//         const order = await Order.findById(orderId).populate('userId');
+//         if (!order) {
+//             return res.status(404).json({ message: 'Appoitment not found!' })
+//         }
 
-        if (order.userId._id.toString() !== user) {
-            return res.status(403).json({ message: 'You are not allow to cancel this appointment' });
-        }
+//         if (order.userId._id.toString() !== user) {
+//             return res.status(403).json({ message: 'You are not allow to cancel this appointment' });
+//         }
 
-        if (order.status !== 'pending') {
-            return res.status(400).json({ message: 'You can only cancel pending appointment' })
-        }
+//         if (order.status !== 'pending') {
+//             return res.status(400).json({ message: 'You can only cancel pending appointment' })
+//         }
 
-        await Order.findByIdAndUpdate(orderId, { status: 'canceled' });
-        res.status(200).json({ message: 'Appointment canceled successfully' });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-}
+//         await Order.findByIdAndUpdate(orderId, { status: 'canceled' });
+//         res.status(200).json({ message: 'Appointment canceled successfully' });
+//     } catch (error) {
+//         res.status(500).json({ message: error.message });
+//     }
+// }

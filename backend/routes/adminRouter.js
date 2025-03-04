@@ -16,14 +16,18 @@ router.post('/assign-doctor', verifyToken, isAdmin, adminController.assignDoctor
 router.post('/remove-doctor', verifyToken, isAdmin, adminController.removeDoctorFromCenter);
 
 //account
-router.post('/create-account', verifyToken, isAdmin, adminController.createAccount);
+router.post('/create-account', verifyToken, isAdmin, adminValidator.createValidator, adminController.createAccount);
 router.get('/accounts', verifyToken, isAdmin, adminController.getAllAccounts);
 router.get('/accounts/:id', verifyToken, isAdmin, adminController.getAccountById);
 router.put('/accounts/:id', verifyToken, isAdmin, adminController.updateAccount);
 router.delete('/accounts/:id', verifyToken, isAdmin, adminController.deleteAccount);
 
 //appointment
-router.put('/appointments/:id/approve', verifyToken, isAdmin, adminController.approveAppointment);
-router.put('/appointments/:id/cancel', verifyToken, isAdmin, adminController.rejectAppointment);
+// router.put('/appointments/:id/approve', verifyToken, isAdmin, adminController.approveAppointment);
+// router.put('/appointments/:id/cancel', verifyToken, isAdmin, adminController.rejectAppointment);
+
+//schedule
+router.patch('/schedule/:scheduleIndex', verifyToken, isAdmin, adminController.assignDoctorToSchedule);
+router.patch('/schedule/:scheduleIndex/remove', verifyToken, isAdmin, adminController.removeDoctorFromSchedule)
 
 module.exports = router;
