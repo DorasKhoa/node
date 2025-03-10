@@ -7,11 +7,11 @@ const userSchema = new mongoose.Schema({
     address: String,
     phoneNumber: Number,
     Dob: String,
-    fees: {type: Number, default: 0},
-    role: {type: mongoose.Schema.Types.ObjectId, ref: 'Role', default: null},
-    center: {type: mongoose.Schema.Types.ObjectId, ref: 'Center', default: null},
-    order: [{type: mongoose.Schema.Types.ObjectId, ref: 'Order', default: []}],
-    schedule: {type: mongoose.Schema.Types.ObjectId, ref:'Schedule', default: null}
+    fees: { type: Number, default: 0 },
+    role: { type: mongoose.Schema.Types.ObjectId, ref: 'Role', default: null },
+    center: { type: mongoose.Schema.Types.ObjectId, ref: 'Center', default: null },
+    order: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Order', default: [] }],
+    schedule: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Schedule', default: [] }]
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);

@@ -5,6 +5,7 @@ const Role = require('../models/role.js')
 const Order = require('../models/order.js');
 const Schedule = require('../models/schedule.js')
 const bcrypt = require('bcrypt');
+const seedSchedule = require('../seeders/seedSchedule.js');
 
 //add center
 exports.createCenter = async (req, res) => {
@@ -148,14 +149,6 @@ exports.getAllAccounts = async (req, res) => {
     try {
         const accounts = await User.find()
             .populate('role', 'nameRole')
-            .populate({
-                path: 'order',
-                select: 'doctorId bookTime fees status paymentMethod',
-                populate: {
-                    path: 'doctorId',
-                    select: 'name'
-                }
-            })
             .select('-password');
         if (!accounts) {
             return res.status(404).json({ message: 'User not found!' })
@@ -290,9 +283,11 @@ exports.removeDoctorFromCenter = async (req, res) => {
     }
 }
 
+//assign doctor to schedule
 exports.assignDoctorToSchedule = async (req, res) => {
     const {scheduleIndex} = req.params;
     const {doctorId} = req.body;
+    console.log(scheduleIndex);
     try {
         const doctor = await User.findById(doctorId).populate('role', 'nameRole');
         if(!doctor || doctor.role.nameRole !== 'doctor') {
@@ -306,20 +301,19 @@ exports.assignDoctorToSchedule = async (req, res) => {
             return res.status(404).json({message: 'Schedule not found!'});
         }
         if(schedule.doctorId) {
-            return res.status(400).json({message: 'This schedual is already have doctor!'})
+            return res.status(400).json({message: 'This schedule is already have doctor!'})
         }
 
-        doctor.schedule = schedule;
-        schedule.doctorId = doctorId;
-        await schedule.save();
-        await doctor.save();
-        res.status(200).json({message: 'Assgin doctor to schedule successfully!', schedule});
+        await User.findByIdAndUpdate(doctorId, {$push: {schedule: schedule}})
+        const updatedSchedule = await Schedule.findByIdAndUpdate(schedule._id, {$set: { doctorId: doctorId }}, {new: true});
+        res.status(200).json({message: 'Assgin doctor to schedule successfully!', updatedSchedule});
 
     } catch(error) {
         res.status(500).json({message: error.message})
     }
 }
 
+//remove doctor from schedule
 exports.removeDoctorFromSchedule = async (req, res) => {
     const {scheduleIndex} = req.params;
     try {
@@ -331,15 +325,86 @@ exports.removeDoctorFromSchedule = async (req, res) => {
             return res.status(400).json({message: 'There are no doctor in this schedule!'})
         }
         if(schedule.userId) {
-            res.status(400).json({message: `User had book ths schedule, can't not remove doctor`});
+            res.status(400).json({message: `User booked this schedule, can't remove doctor`});
         }
-        await User.findByIdAndUpdate(schedule.doctorId, {$set: {schedule: null}});
+        await User.findByIdAndUpdate(schedule.doctorId, {$pull: {schedule: schedule._id}});
         await Schedule.findByIdAndUpdate(schedule._id, {$set: {doctorId: null}})
         res.status(200).json({message: 'remove doctor from schedule successfully!', schedule});
     } catch(error) {
         res.status(500).json({message: error.message});
     }
 }
+
+//get all schedules
+exports.getAllSchedule = async (req, res) => {
+    try {
+        const schedule = await Schedule.find();
+        if(!schedule) {
+            return res.status(404).json({message: 'Schedule not found!'});
+        }
+        res.status(200).json(schedule);
+    } catch (error) {
+        res.status(500).json({message: error.message});
+    }
+}
+
+//get schedule by id
+exports.getScheduleById = async(req, res) => {
+    try {
+        const schedule = await Schedule.findById(req.params.id);
+        if(!schedule) {
+            return res.status(404).json({message: 'Schedule not found!'})
+        }
+        res.status(200).json(schedule);
+    } catch(error) {
+        res.status(500).json({message: error.message})
+    }
+}
+
+//create Schedule
+exports.createSchedule = async(req, res) => {
+    try {
+        await seedSchedule();
+        res.status(200).json({message: 'Schedule create successfully!'});
+    } catch (error) {
+        res.status(500).json({message: error.message});
+    }
+}
+
+exports.deleteSchedule = async (req, res) => {
+    try {
+        const schedules = await Schedule.find()
+        if(!schedules) {
+            return res.status(404).json({message: 'Schedule not found!'});
+        }
+        for(const schedule of schedules) {
+            if(schedule.userId) {
+                return res.status(400).json({message: 'There is booked schedule, failed to remove'})
+            }
+        }
+        await Schedule.deleteMany({});
+        res.status(200).json({message: 'All schedule removed successfully!'});
+    } catch (error) {
+        res.status(500).json({message: error.message});
+    }
+}
+
+exports.deleteScheduleById = async (req, res) => {
+    try {
+        const schedule = await Schedule.findById(req.params.id);
+        if(!schedule) {
+            return res.status(404).json({message: 'Schedule not found!'});
+        }
+        if(schedule.userId) {
+            return res.status(400).json({message: 'Schedule booked, failed to remove'});
+        }
+        await Schedule.findByIdAndDelete(req.params.id)
+        res.status(200).json({message: 'Schedule removed successfully!'})
+    } catch (error) {
+        res.status(500).json({message: error.message})
+    }
+}
+
 // //approve appointment
 // exports.approveAppointment = async (req, res) => {
 //     const orderId = req.params.id;

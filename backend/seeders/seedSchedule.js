@@ -2,9 +2,10 @@ const Schedule = require('../models/schedule.js');
 const mongoose = require('mongoose');
 require('dotenv').config();
 
-mongoose.connect(process.env.DB_URI)
-    .then(()=> console.log('MongoDB connected'))
-    .catch(err => console.log(err));
+//only open this when seeding data
+// mongoose.connect(process.env.DB_URI)
+//     .then(()=> console.log('MongoDB connected'))
+//     .catch(err => console.log(err));
 
 const seedSchedule = async () => {
     try {
@@ -29,16 +30,20 @@ const seedSchedule = async () => {
                     startTime: times[j].start,
                     endTime: times[j].end,
                     date: formattedDate,
+                    doctorId: null,
+                    userId: null,
+                    status: 'pending'
                 });
             }
         }
         await Schedule.insertMany(schedules);
         console.log('Data seed successfully');
-        mongoose.connection.close();
+        // mongoose.connection.close();
     } catch (error) {
         console.log('Error seeding schedual', error)
-        mongoose.connection.close();
+        //mongoose.connection.close();
     }
 };
 
-seedSchedule()
+// seedSchedule()
+module.exports = seedSchedule;

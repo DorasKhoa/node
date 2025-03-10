@@ -9,8 +9,8 @@ router.post('/register', userValidator.registerValidator ,userController.registe
 router.post('/login', userValidator.loginValidator ,userController.login);
 
 //appointment
-router.post('/appointments', verifyToken, isUser, userController.bookingAppointment);
-// router.get('/appointments', verifyToken, isUser, userController.getAppointment);
-// router.put('/appointments/:id', verifyToken, isUser, userController.cancelAppointment);
+router.patch('/appointments/:id', verifyToken, isUser, userController.bookingAppointment);
+router.get('/appointments', verifyToken, isUser, userController.getAppointment);
+router.patch('/appointments/:id/cancel', verifyToken, isUser, userController.cancelAppointment);
 
 module.exports = router;

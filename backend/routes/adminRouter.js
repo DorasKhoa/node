@@ -28,6 +28,11 @@ router.delete('/accounts/:id', verifyToken, isAdmin, adminController.deleteAccou
 
 //schedule
 router.patch('/schedule/:scheduleIndex', verifyToken, isAdmin, adminController.assignDoctorToSchedule);
-router.patch('/schedule/:scheduleIndex/remove', verifyToken, isAdmin, adminController.removeDoctorFromSchedule)
+router.patch('/schedule/:scheduleIndex/remove', verifyToken, isAdmin, adminController.removeDoctorFromSchedule);
+router.get('/schedule', verifyToken, isAdmin, adminController.getAllSchedule);
+router.get('/schedule/:id', verifyToken, isAdmin, adminController.getScheduleById);
+router.post('/schedule', verifyToken, isAdmin, adminController.createSchedule);
+router.delete('/schedule/all', verifyToken, isAdmin, adminController.deleteSchedule);
+router.delete('/schedule/:id', verifyToken, isAdmin, adminController.deleteScheduleById);
 
 module.exports = router;

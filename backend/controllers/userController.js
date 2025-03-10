@@ -1,6 +1,7 @@
 const User = require('../models/user.js');
 const Role = require('../models/role.js');
 const Order = require('../models/order.js');
+const Schedule = require ('../models/schedule.js');
 const bcrypt = require('bcrypt');
 const { validationResult } = require('express-validator');
 const { generateAccessToken, generateRefreshToken } = require('../utils/jwtHelper.js');
@@ -76,62 +77,66 @@ exports.login = async (req, res) => {
     }
 }
 
-// //get appointment
-// exports.getAppointment = async (req, res) => {
-//     try {
-//         const userId = req.user.id
-//         const orders = await Order.find({ userId })
-//             .populate('doctorId', 'name')
-//             .populate('userId', 'name');
-//         if (!orders) {
-//             return res.status(404).json({ message: 'No appointments found!' })
-//         }
-//         const responses = orders.map(order => ({
-//             _id: order._id,
-//             userName: order.userId.name,
-//             doctorName: order.doctorId.name,
-//             bookTime: order.bookTime,
-//             fees: order.fees,
-//             status: order.status,
-//             paymentMethod: order.paymentMethod
-//         }))
-//         res.status(200).json(responses);
-//     } catch (error) {
-//         res.status(500).json({ message: error.message });
-//     }
-// }
-
-//booking appointment
-exports.bookingAppointment = async (req, res) => {
-    const {doctorId} = req.body;
+//get appointment
+exports.getAppointment = async (req, res) => {
+    const userId = req.user.id
     try {
-        
+        const user = await User.findById(userId)
+        .select('schedule -_id')
+        .populate('schedule', '-_id -scheduleIndex')
+        if(!user) {
+            return res.status(404).json({message: 'User not found!'});
+        }
+        res.status(200).json(user);
     } catch (error) {
         res.status(500).json({message: error.message})
     }
 }
 
-// //cancel appointment
-// exports.cancelAppointment = async (req, res) => {
-//     const orderId = req.params.id;
-//     const user = req.user.id;
-//     try {
-//         const order = await Order.findById(orderId).populate('userId');
-//         if (!order) {
-//             return res.status(404).json({ message: 'Appoitment not found!' })
-//         }
+//booking appointment
+exports.bookingAppointment = async (req, res) => {
+    const scheduleId = req.params.id
+    const userId = req.user.id
+    try {
+        const schedule = await Schedule.findById(scheduleId);
+        if(!schedule) {
+            return res.status(404).json({message: 'Schedule not found'});
+        }
+        if(schedule.userId) {
+            return res.status(400).json({message: 'Schedule booked by another user'});
+        }
+        if(!schedule.doctorId) {
+            return res.status(400).json({message: 'Schedule have no doctor, failed to book'});
+        }
+        
+        const updatedSchedule = await Schedule.findByIdAndUpdate(scheduleId, {$set: {userId}}, {new: true});
+        await User.findByIdAndUpdate(userId, {$push: {schedule: scheduleId}});
+        res.status(200).json({message: 'Shedule booked successfully!', updatedSchedule})
+    } catch (error) {
+        res.status(500).json({message: error.message})
+    }
+}
 
-//         if (order.userId._id.toString() !== user) {
-//             return res.status(403).json({ message: 'You are not allow to cancel this appointment' });
-//         }
+//cancel appointment
+exports.cancelAppointment = async (req, res) => {
+    const scheduleId = req.params.id;
+    const userId = req.user.id;
+    try {
+        const schedule = await Schedule.findById(scheduleId);
+        if(!schedule) {
+            return res.status(404).json({message: 'Schedule not found!'});
+        }
+        if(!schedule.userId) {
+            return res.status(400).json({message: `Schedule hadn't book, failed to cancelled`})
+        }
+        if(!userId || userId.toString() !== schedule.userId.toString()) {
+            return res.status(403).json({message: 'You are not allow to cancel this appointment!'});
+        }
 
-//         if (order.status !== 'pending') {
-//             return res.status(400).json({ message: 'You can only cancel pending appointment' })
-//         }
-
-//         await Order.findByIdAndUpdate(orderId, { status: 'canceled' });
-//         res.status(200).json({ message: 'Appointment canceled successfully' });
-//     } catch (error) {
-//         res.status(500).json({ message: error.message });
-//     }
-// }
+        const updatedSchedule = await Schedule.findByIdAndUpdate(scheduleId, {$set: {userId: null}}, {new: true});
+        await User.findByIdAndUpdate(userId, {$pull: {schedule: scheduleId}});
+        res.status(200).json({message: 'Appointment cancelled successfully!', updatedSchedule});
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+}
